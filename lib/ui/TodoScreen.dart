@@ -9,32 +9,11 @@ class TodoScreen extends StatefulWidget {
 }
 
 class _TodoState extends State<TodoScreen> {
-  List<Todo> todoList;
-  List<Todo> doneList;
   Firestore _store = Firestore();
-  int todoCount = 0;
-  int doneCount = 0;
   int tabIndex = 0;
-
-  void getList() async{
-    await provider.open('todo.db');
-    provider.getAllTodo().then((todoList) {
-      setState(() {
-        this.todoList = todoList;
-        this.todoCount = todoList.length;
-      });
-    });
-    provider.getAllDone().then((doneList) {
-      setState(() {
-        this.doneList = doneList;
-        this.doneCount = doneList.length;
-      });
-    });
-  }
 
  @override
  Widget build(BuildContext context) {
-   getList();
    return Scaffold(
      appBar: AppBar(
         title: Text('Todo'),
@@ -46,70 +25,74 @@ class _TodoState extends State<TodoScreen> {
             : Icons.delete,
           ),
           onPressed: () async {
-            setState(() {});
-            return _store.collection('todo').where('done', isEqualTo: 1).getDocuments().then((d) {
-              d.documents.forEach((f) {
-                f.reference.delete();
+            tabIndex == 0
+            ? Navigator.pushNamed(context, '/newTodoList')
+            : _store.collection('todo').where('done', isEqualTo: 1).getDocuments().then((d) {
+                d.documents.forEach((f) {
+                  f.reference.delete();
+                });
               });
-            });
+            setState(() {});
             },
           ),
         ]
       ),
-      body: StreamBuilder(),
-      // body: Center(
-      //     child: tabIndex == 0
-      //     ? todoCount > 0
-      //     ? ListView.builder(
-      //           itemCount: todoCount,
-      //           itemBuilder: (context, int index) {
-      //             return Column(
-      //               children: <Widget>[
-      //                 ListTile(
-      //                   title: Text(
-      //                     this.todoList[index].title,
-      //                   ),
-      //                   trailing: Checkbox(
-      //                       onChanged: (bool boolean) {
-      //                         setState(() {
-      //                           todoList[index].done = boolean;
-      //                         });
-      //                         provider.update(todoList[index]);
-      //                       },
-      //                       value: todoList[index].done
-      //                       ),
-      //                     )
-      //                   ],
-      //                 );
-      //               },
-      //             )
-      //           : Text('No data found..')
-      //       : doneCount > 0 ?
-      //         ListView.builder(
-      //           itemCount: doneCount,
-      //           itemBuilder: (context, int index) {
-      //             return Column(
-      //               children: <Widget>[
-      //                 ListTile(
-      //                   title: Text(
-      //                     this.doneList[index].title,
-      //                   ),
-      //                   trailing: Checkbox(
-      //                       onChanged: (bool boolean) {
-      //                         setState(() {
-      //                           doneList[index].done = boolean;
-      //                         });
-      //                         provider.update(doneList[index]);
-      //                       },
-      //                       value: doneList[index].done
-      //                       ),
-      //                     )
-      //                   ],
-      //                 );
-      //               },
-      //             )
-      //           : Text('No data found..')
-      //     ),
+      body: StreamBuilder(
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          if (tabIndex == 0){
+            if (snapshot.data.documents.length > 0) {
+              return ListView.builder(
+                itemCount: snapshot.data.documents.length,
+                itemBuilder: (BuildContext context, int index) {
+                  int id = snapshot.data.documents.elementAt(index).data['_id'];
+                  bool done = snapshot.data.documents.elementAt(index).data['done'] == 1;
+                  String title = snapshot.data.documents.elementAt(index).data['title'];
+                  String documentId = snapshot.data.documents.elementAt(index).documentID;
+                  return CheckboxListTile(
+                    title: Text(title),
+                    value: done,
+                    onChanged: (bool done) {
+                      setState(() {
+                        _store.collection('todo').document(documentId).setData({'_id': id, 'title': title, 'done': 1});
+                      });
+                    },
+                  );
+                },
+              );
+            } else {
+              return Center(
+                child: Text('No data found..'),
+              );
+            }
+          } else {
+            if (snapshot.data.documents.length > 0) {
+              return ListView.builder(
+                itemCount: snapshot.data.documents.length,
+                itemBuilder: (BuildContext context, int index) {
+                  int id = snapshot.data.documents.elementAt(index).data['_id'];
+                  bool done = snapshot.data.documents.elementAt(index).data['done'] != 0;
+                  String title = snapshot.data.documents.elementAt(index).data['title'];
+                  String documentId = snapshot.data.documents.elementAt(index).documentID;
+                  return CheckboxListTile(
+                    title: Text(title),
+                    value: done,
+                    onChanged: (bool done) {
+                      setState(() {
+                        _store.collection('todo').document(documentId).setData({'_id': id, 'title': title, 'done': 0});
+                      });
+                    },
+                  );
+                },
+              );
+            } else {
+              return Center(
+                child: Text('No data found..'),
+              );
+            }
+          }
+        },
+        stream: _store.collection('todo').where('done', isEqualTo: tabIndex).snapshots(),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: tabIndex,
           items: [
