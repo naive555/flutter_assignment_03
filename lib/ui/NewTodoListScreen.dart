@@ -13,7 +13,7 @@ class NewTodoListScreen extends StatefulWidget {
 class NewTodoListState extends State<NewTodoListScreen>{
   final _formkey = GlobalKey<FormState>();
   final textController = TextEditingController();
-  Firestore _store = Firestore();
+  Firestore _store = Firestore.instance;
 
    @override
   Widget build(BuildContext context) {
@@ -43,8 +43,7 @@ class NewTodoListState extends State<NewTodoListScreen>{
                 _id += 1;
                 _formkey.currentState.validate();
                 if (textController.text.length > 0) {
-                  CollectionReference todoList = _store.collection('todo');
-                  await todoList.document(_id.toString()).setData({
+                  await _store.collection('todo').document(_id.toString()).setData({
                     '_id': _id,
                     'title': textController.text,
                     'done': 0,
