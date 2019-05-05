@@ -39,57 +39,63 @@ class _TodoState extends State<TodoScreen> {
       ),
       body: StreamBuilder(
         builder: (BuildContext context, AsyncSnapshot snapshot) {
-          if (tabIndex == 0){
-            if (snapshot.data.documents.length > 0) {
-              return ListView.builder(
-                itemCount: snapshot.data.documents.length,
-                itemBuilder: (BuildContext context, int index) {
-                  int id = snapshot.data.documents.elementAt(index).data['_id'];
-                  bool done = snapshot.data.documents.elementAt(index).data['done'] == 1;
-                  String title = snapshot.data.documents.elementAt(index).data['title'];
-                  String documentId = snapshot.data.documents.elementAt(index).documentID;
-                  return CheckboxListTile(
-                    title: Text(title),
-                    value: done,
-                    onChanged: (bool done) {
-                      setState(() {
-                        _store.collection('todo').document(documentId).setData({'_id': id, 'title': title, 'done': 1});
-                      });
+           if (snapshot.hasData) {
+              if (tabIndex == 0){
+                if (snapshot.data.documents.length > 0) {
+                  return ListView.builder(
+                    itemCount: snapshot.data.documents.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      int id = snapshot.data.documents.elementAt(index).data['_id'];
+                      bool done = snapshot.data.documents.elementAt(index).data['done'] == 1;
+                      String title = snapshot.data.documents.elementAt(index).data['title'];
+                      String documentId = snapshot.data.documents.elementAt(index).documentID;
+                      return CheckboxListTile(
+                        title: Text(title),
+                        value: done,
+                        onChanged: (bool done) {
+                          setState(() {
+                            _store.collection('todo').document(documentId).setData({'_id': id, 'title': title, 'done': 1});
+                          });
+                        },
+                      );
                     },
                   );
-                },
-              );
+                } else {
+                  return Center(
+                    child: Text('No data found..'),
+                  );
+                }
+              } else {
+                if (snapshot.data.documents.length > 0) {
+                  return ListView.builder(
+                    itemCount: snapshot.data.documents.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      int id = snapshot.data.documents.elementAt(index).data['_id'];
+                      bool done = snapshot.data.documents.elementAt(index).data['done'] != 0;
+                      String title = snapshot.data.documents.elementAt(index).data['title'];
+                      String documentId = snapshot.data.documents.elementAt(index).documentID;
+                      return CheckboxListTile(
+                        title: Text(title),
+                        value: done,
+                        onChanged: (bool done) {
+                          setState(() {
+                            _store.collection('todo').document(documentId).setData({'_id': id, 'title': title, 'done': 0});
+                          });
+                        },
+                      );
+                    },
+                  );
+                } else {
+                  return Center(
+                    child: Text('No data found..'),
+                  );
+                }
+              }
             } else {
               return Center(
                 child: Text('No data found..'),
               );
             }
-          } else {
-            if (snapshot.data.documents.length > 0) {
-              return ListView.builder(
-                itemCount: snapshot.data.documents.length,
-                itemBuilder: (BuildContext context, int index) {
-                  int id = snapshot.data.documents.elementAt(index).data['_id'];
-                  bool done = snapshot.data.documents.elementAt(index).data['done'] != 0;
-                  String title = snapshot.data.documents.elementAt(index).data['title'];
-                  String documentId = snapshot.data.documents.elementAt(index).documentID;
-                  return CheckboxListTile(
-                    title: Text(title),
-                    value: done,
-                    onChanged: (bool done) {
-                      setState(() {
-                        _store.collection('todo').document(documentId).setData({'_id': id, 'title': title, 'done': 0});
-                      });
-                    },
-                  );
-                },
-              );
-            } else {
-              return Center(
-                child: Text('No data found..'),
-              );
-            }
-          }
         },
         stream: _store.collection('todo').where('done', isEqualTo: tabIndex).snapshots(),
       ),
